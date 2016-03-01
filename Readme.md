@@ -3,13 +3,14 @@ This is a [Dronekit](https://github.com/dronekit/dronekit-python) based APM conn
 
 ### Test
 
-1. Connect the pixhawk with your companion computer.
-2. Set the right port and baudrate for connection in `test.py`. Like:
+- Connect the pixhawk with your companion computer.
+- Set the right port and baudrate for connection in `test.py`. Like:
 
 ```
 APMConnector('/dev/cu.usbserial-A503TM7S',57600)
 ``` 
-3. Test
+
+- Test
 ```
 $ python test.py
 ```
