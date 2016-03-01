@@ -63,11 +63,11 @@ class APMConnector:
     def armed(self):
         self.isConnected()
         self.Log('Arming ... ', 'SYSTEM')
-        if v.mode.name == "INITIALISING":
+        if self.vehicle.mode.name == "INITIALISING":
             print "Waiting for vehicle to initialise"
             time.sleep(1)
-        while vehicle.gps_0.fix_type < 2:
-            print "Waiting for GPS...:", vehicle.gps_0.fix_type
+        while self.vehicle.gps_0.fix_type < 2:
+            print "Waiting for GPS...:", self.vehicle.gps_0.fix_type
             time.sleep(1)
         while not self.vehicle.is_armable:
             self.Log("Waiting for vehicle to initialise ... ")
@@ -143,7 +143,7 @@ class APMConnector:
             0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
         for x in range(0,duration):
             self.vehicle.send_mavlink(msg)
-            self.Log("Airspeed: %s" % )
+            #self.Log("Airspeed: %s" % )
             self.Log("Currently, Global Location: %s, Airspeed: %s, " % (self.vehicle.location.global_frame,self.vehicle.airspeed))
             time.sleep(1)
 
@@ -158,6 +158,124 @@ class APMConnector:
         self.Log("Setting the camera to track point ... ", 'SYSTEM')
         self.vehicle.gimbal.target_location(self.vehicle.home_location)
         time.sleep(10)
+
+    def set_roi(location):
+        self.isConnected()
+        self.Log("Setting ROI ... ", 'SYSTEM')
+        msg = self.vehicle.message_factory.command_long_encode(
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI, #command
+            0, #confirmation
+            0, 0, 0, 0, #params 1-4
+            location.lat,
+            location.lon,
+            location.alt
+            )
+        # send command to vehicle
+        self.vehicle.send_mavlink(msg)
+
+    def get_location_metres(original_location, dNorth, dEast):
+        """
+        Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
+        specified `original_location`. The returned LocationGlobal has the same `alt` value
+        as `original_location`.
+
+        The function is useful when you want to move the vehicle around specifying locations relative to
+        the current vehicle position.
+
+        The algorithm is relatively accurate over small distances (10m within 1km) except close to the poles.
+
+        For more information see:
+        http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
+        """
+        earth_radius=6378137.0 #Radius of "spherical" earth
+        #Coordinate offsets in radians
+        dLat = dNorth/earth_radius
+        dLon = dEast/(earth_radius*math.cos(math.pi*original_location.lat/180))
+
+        #New position in decimal degrees
+        newlat = original_location.lat + (dLat * 180/math.pi)
+        newlon = original_location.lon + (dLon * 180/math.pi)
+        if type(original_location) is LocationGlobal:
+            targetlocation=LocationGlobal(newlat, newlon,original_location.alt)
+        elif type(original_location) is LocationGlobalRelative:
+            targetlocation=LocationGlobalRelative(newlat, newlon,original_location.alt)
+        else:
+            raise Exception("Invalid Location object passed")
+
+        return targetlocation;
+
+    def get_distance_metres(aLocation1, aLocation2):
+        """
+        Returns the ground distance in metres between two `LocationGlobal` or `LocationGlobalRelative` objects.
+
+        This method is an approximation, and will not be accurate over large distances and close to the
+        earth's poles. It comes from the ArduPilot test code:
+        https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+        """
+        dlat = aLocation2.lat - aLocation1.lat
+        dlong = aLocation2.lon - aLocation1.lon
+        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+    def get_bearing(aLocation1, aLocation2):
+        """
+        Returns the bearing between the two LocationGlobal objects passed as parameters.
+
+        This method is an approximation, and may not be accurate over large distances and close to the
+        earth's poles. It comes from the ArduPilot test code:
+        https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+        """
+        off_x = aLocation2.lon - aLocation1.lon
+        off_y = aLocation2.lat - aLocation1.lat
+        bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
+        if bearing < 0:
+            bearing += 360.00
+        return bearing;
+
+    def downloadMission(self):
+        cmds = vehicle.commands
+        cmds.download()
+        cmds.wait_ready()
+
+    def clearMission(self):
+        cmds = vehicle.commands
+        cmds.clear()
+        cmds.upload()
+
+    def setCommands(self):
+        self.downloadMission()
+
+        cmd1=Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10)
+        cmd2=Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, 10, 10, 10)
+        cmds.add(cmd1)
+        cmds.add(cmd2)
+        cmds.upload() # Send commands
+
+    def modifyCommands(self):
+        # Get the set of commands from the vehicle
+        cmds = vehicle.commands
+        cmds.download()
+        cmds.wait_ready()
+
+        # Save the vehicle commands to a list
+        missionlist=[]
+        for cmd in cmds:
+            missionlist.append(cmd)
+
+        # Modify the mission as needed. For example, here we change the
+        # first waypoint into a MAV_CMD_NAV_TAKEOFF command.
+        missionlist[0].command=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+
+        # Clear the current mission (command is sent when we call upload())
+        cmds.clear()
+
+        #Write the modified mission and flush to the vehicle
+        for cmd in missionlist:
+            cmds.add(cmd)
+        cmds.upload()
+
+    def startMission():
+        pass
 
     def Log(self, content, level=None):
         if level == 'SYSTEM':

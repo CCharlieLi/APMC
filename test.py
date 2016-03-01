@@ -2,7 +2,7 @@ from APMC.APMConnector import APMConnector
 
 
 def main():
-    vehicle = APMConnector('127.0.0.1:14550')
+    vehicle = APMConnector('/dev/cu.usbserial-A503TM7S',57600)
     #vehicle.connect()
     vehicle.getAttributes()
     vehicle.addListeners()
