@@ -2,14 +2,15 @@ from APMC.APMConnector import APMConnector
 
 
 def main():
-    vehicle = APMConnector('/dev/cu.usbserial-A503TM7S',57600)
+    vehicle = APMConnector('/dev/ttyUSB0',57600)
     #vehicle.connect()
     vehicle.getAttributes()
     vehicle.addListeners()
     vehicle.armed()
-    vehicle.getHomeLocation()
+    #vehicle.getHomeLocation()
     vehicle.gerParams()
-    vehicle.armAndTakeOff(100)
+    vehicle.armAndTakeOff(1)
+    #vehicle.sendNedVelocity(1,0,0,2)
 
 
 if __name__ == '__main__':
