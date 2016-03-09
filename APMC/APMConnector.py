@@ -4,28 +4,61 @@ import time
 
 class APMConnector:
     '''Class for connecting configuration '''
+
     def __init__(self, addr, baud):
         self.addr = addr
         self.baud = baud
         self.vehicle = None
         self.connect()
+        self.selfCheck()
 
+    # 
+    # Check if connection is established
+    # 
     def isConnected(self):
         if self.vehicle == None:
             self.Log('Please connect to a vehicle first!', 'WARN')
             exit(0)
+            #return False
+        return True
 
+    # 
+    # Connect board with given serial/network port and baudrate
+    # Return: 
+    #     object: Vehicle object
+    # 
     def connect(self):
         self.Log('Connecting to the vehicle ... ', 'SYSTEM')
         self.vehicle = connect(self.addr, baud=self.baud, wait_ready=True)
         return self.vehicle
+
+    #
+    # UAV self check (Experiment)
+    #
+    def selfCheck(self):
+        pass
         
-    def setSpeed(self):
+    # 
+    # Set UAV speed (Experiment)
+    # Params:
+    #     num: Air speed (m/s)
+    #     num: Ground speed (m/s)
+    # Return:
+    #     (num, num): (airspeed, groundspeed) 
+    # 
+    def setSpeed(self, airspeed, groundspeed):
         self.isConnected()
         self.Log('Setting attributes ... ', 'SYSTEM')
-        vehicle.airspeed = 5 #m/s
-        vehicle.groundspeed = 7.5 #m/s
 
+        vehicle.airspeed = airspeed #m/s
+        vehicle.groundspeed = groundspeed #m/s
+
+        self.Log('Air speed: %s, Ground speed: %s' % (vehicle.airspeed, vehicle.groundspeed))
+        return (vehicle.airspeed, vehicle.groundspeed)
+
+    #
+    # Get UAV attributes (Experiment)
+    #
     def getAttributes(self):
         self.isConnected()
         self.Log('Reading attribute ... ', 'SYSTEM')
@@ -50,6 +83,9 @@ class APMConnector:
         self.Log("Mode: %s" % self.vehicle.mode.name)    # settable
         self.Log("Armed: %s" % self.vehicle.armed)    # settable
 
+    #
+    # Add listener for attributes and parameters (Experiment)
+    #
     def addListeners(self):
         self.isConnected()
         callback = Callback()
@@ -60,49 +96,70 @@ class APMConnector:
         self.Log('Adding parameters listeners ... ', 'SYSTEM')
         self.vehicle.parameters.add_attribute_listener('*', callback.cb_param_all)
 
+    #
+    # Arm UAV
+    #
     def armed(self):
         self.isConnected()
         self.Log('Arming ... ', 'SYSTEM')
+
         if self.vehicle.mode.name == "INITIALISING":
-            print "Waiting for vehicle to initialise"
+            self.Log("Waiting for vehicle to initialise ... ")
             time.sleep(1)
         while self.vehicle.gps_0.fix_type < 2:
-            print "Waiting for GPS...:", self.vehicle.gps_0.fix_type
+            self.Log("Waiting for GPS...:" + self.vehicle.gps_0.fix_type)
             time.sleep(1)
         while not self.vehicle.is_armable:
             self.Log("Waiting for vehicle to initialise ... ")
             time.sleep(1)
+
         self.vehicle.mode = VehicleMode("GUIDED")
         self.vehicle.armed = True
+
         while not self.vehicle.mode.name=='GUIDED' or not self.vehicle.armed:
             self.Log('Getting ready to take off ...')
             time.sleep(1)
         self.Log("Armed: %s" % self.vehicle.armed)
 
+    # 
+    # Get home location (Experiment)
+    # Return:
+    #     location
+    # 
     def getHomeLocation(self):
         self.isConnected()
         self.Log('Getting Vehicle Home location ... ', 'SYSTEM')
+
         while not self.vehicle.home_location:
+            self.Log('Waiting for home location ... ')
             cmds = self.vehicle.commands
             cmds.download()
             cmds.wait_ready()
-            if not self.vehicle.home_location:
-                self.Log('Waiting for home location ... ')
+                
         self.Log("Home location: %s" % self.vehicle.home_location)
+        return self.vehicle.home_location
 
+    #
+    # Get vehicle parameters
+    #
     def gerParams(self):
         self.isConnected()
         self.Log("Getting parameters ... ", 'SYSTEM')
         for key, value in self.vehicle.parameters.iteritems():
             self.Log(" Key:%s Value:%s" % (key,value))
 
-    def armAndTakeOff(self, altitude):
+    #
+    # Take off to given altitude (Experiment)
+    # Params:
+    #     num: altitude (m)
+    #
+    def takeOff(self, altitude):
         self.isConnected()
         self.Log("Arming vehicle and taking off ... ", 'SYSTEM')
-        self.armed()
 
-        self.Log('Taking off!', 'SYSTEM') 
+        self.armed()
         self.vehicle.simple_takeoff(altitude)
+        self.Log('Taking off!', 'SYSTEM') 
 
         while True:
             print ">>> Altitude: ", self.vehicle.location.global_relative_frame.alt
@@ -111,27 +168,31 @@ class APMConnector:
                 break
             time.sleep(1)
 
-    def goTo(self):
+    #
+    # Go to given location with given groud speed (Experiment)
+    # Params:
+    #     location: location
+    #     num: groundspeed (m/s)
+    #
+    def goTo(self, location, groundspeed):
         self.isConnected()
         self.Log("Going to ... ", 'SYSTEM')
         vehicle.mode = VehicleMode("GUIDED")
 
         a_location = LocationGlobalRelative(-34.364114, 149.166022, 30)
-        self.vehicle.simple_goto(a_location)
-        #vehicle.simple_goto(a_location, groundspeed=10)
+        self.vehicle..simple_goto(a_location, groundspeed = groundspeed)
 
+    #
+    # Set NED speed for UAV
+    # Params:
+    #     num: velocity_x (m/s)   velocity_x > 0 => fly North   velocity_x < 0 => fly South
+    #     num: velocity_y (m/s)   velocity_y > 0 => fly East    velocity_y < 0 => fly West
+    #     num: velocity_z (m/s)   velocity_z < 0 => ascend      velocity_z > 0 => descend
+    #     num: duration (s)
     def sendNedVelocity(self, velocity_x, velocity_y, velocity_z, duration):
-        '''
-        Set up velocity mappings
-        velocity_x > 0 => fly North
-        velocity_x < 0 => fly South
-        velocity_y > 0 => fly East
-        velocity_y < 0 => fly West
-        velocity_z < 0 => ascend
-        velocity_z > 0 => descend
-        '''
         self.isConnected()
         self.Log("Moving vehicle in direction based on specified velocity vectors ", 'SYSTEM')
+
         msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
             0,       # time_boot_ms (not used)
             0, 0,    # target system, target component
@@ -141,40 +202,39 @@ class APMConnector:
             velocity_x, velocity_y, velocity_z, # x, y, z velocity in m/s
             0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
             0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+
         for x in range(0,duration):
             self.vehicle.send_mavlink(msg)
             #self.Log("Airspeed: %s" % )
             self.Log("Currently, Global Location: %s, Airspeed: %s, " % (self.vehicle.location.global_frame,self.vehicle.airspeed))
             time.sleep(1)
 
-    def gimbalRotate(self):
-        self.isConnected()
-        self.Log("Setting gimbal direction ... ", 'SYSTEM')
-        self.vehicle.gimbal.rotate(-90, 0, 0)
-        time.sleep(10)
-
-    def gimbalTrack(self):
-        self.isConnected()
-        self.Log("Setting the camera to track point ... ", 'SYSTEM')
-        self.vehicle.gimbal.target_location(self.vehicle.home_location)
-        time.sleep(10)
-
-    def set_roi(location):
-        self.isConnected()
-        self.Log("Setting ROI ... ", 'SYSTEM')
-        msg = self.vehicle.message_factory.command_long_encode(
+    #
+    # Set UAV yaw
+    # Params:
+    #     num:  degrees
+    #     num:  direction (-1 ccw, 1 cw)
+    #     bool: relative (relative offset 1, absolute angle 0)
+    #
+    #
+    def setYaw(degrees, direction, relative=False):
+        if relative:
+            is_relative=1 #yaw relative to direction of travel
+        else:
+            is_relative=0 #yaw is an absolute angle
+        msg = vehicle.message_factory.command_long_encode(
             0, 0,    # target system, target component
-            mavutil.mavlink.MAV_CMD_DO_SET_ROI, #command
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
             0, #confirmation
-            0, 0, 0, 0, #params 1-4
-            location.lat,
-            location.lon,
-            location.alt
-            )
-        # send command to vehicle
+            degrees,    # param 1, yaw in degrees
+            0,          # param 2, yaw speed deg/s
+            direction,  # param 3, direction 
+            is_relative,# param 4, 
+            0, 0, 0)    # param 5 ~ 7 not used
+        
         self.vehicle.send_mavlink(msg)
 
-    def get_location_metres(original_location, dNorth, dEast):
+    def get_location_metres(originalLocation, dNorth, dEast):
         """
         Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
         specified `original_location`. The returned LocationGlobal has the same `alt` value
@@ -276,6 +336,33 @@ class APMConnector:
 
     def startMission():
         pass
+
+    def gimbalRotate(self):
+        self.isConnected()
+        self.Log("Setting gimbal direction ... ", 'SYSTEM')
+        self.vehicle.gimbal.rotate(-90, 0, 0)
+        time.sleep(10)
+
+    def gimbalTrack(self):
+        self.isConnected()
+        self.Log("Setting the camera to track point ... ", 'SYSTEM')
+        self.vehicle.gimbal.target_location(self.vehicle.home_location)
+        time.sleep(10)
+
+    def set_roi(location):
+        self.isConnected()
+        self.Log("Setting ROI ... ", 'SYSTEM')
+        msg = self.vehicle.message_factory.command_long_encode(
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI, #command
+            0, #confirmation
+            0, 0, 0, 0, #params 1-4
+            location.lat,
+            location.lon,
+            location.alt
+            )
+        # send command to vehicle
+        self.vehicle.send_mavlink(msg)
 
     def Log(self, content, level=None):
         if level == 'SYSTEM':
