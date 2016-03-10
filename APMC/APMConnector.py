@@ -12,6 +12,12 @@ class APMConnector:
         self.connect()
         self.selfCheck()
 
+    #########################################
+    #                                       #
+    #            Initial functions          #
+    #                                       #
+    #########################################
+
     # 
     # Check if connection is established
     # 
@@ -38,6 +44,16 @@ class APMConnector:
     def selfCheck(self):
         pass
         
+
+
+    #########################################
+    #                                       #
+    #            Control functions          #
+    #                                       #
+    #########################################
+
+
+
     # 
     # Set UAV speed (Experiment)
     # Params:
@@ -132,9 +148,7 @@ class APMConnector:
 
         while not self.vehicle.home_location:
             self.Log('Waiting for home location ... ')
-            cmds = self.vehicle.commands
-            cmds.download()
-            cmds.wait_ready()
+            self.downloadMission()
                 
         self.Log("Home location: %s" % self.vehicle.home_location)
         return self.vehicle.home_location
@@ -212,12 +226,22 @@ class APMConnector:
     #
     # Set UAV yaw
     # Params:
-    #     num:  degrees
+    #     num:  degrees (0 degrees is North in absolute angle)
     #     num:  direction (-1 ccw, 1 cw)
     #     bool: relative (relative offset 1, absolute angle 0)
     #
-    #
+    # Note:(http://python.dronekit.io/guide/copter/guided_mode.html)
+    # - The yaw will return to the default (facing direction of travel) after you set the mode or change the command 
+    #   used for controlling movement.
+    # - At time of writing there is no safe way to return to the default yaw “face direction of travel” behaviour.
+    # - After taking off, yaw commands are ignored until the first “movement” command has been received. If you need 
+    #   to yaw immediately following takeoff then send a command to “move” to your current position.
+    # - Setting the ROI may work to get yaw to track a particular point (depending on the gimbal setup).
+
     def setYaw(degrees, direction, relative=False):
+        self.isConnected()
+        self.Log("Setting Yaw ... ", 'SYSTEM')
+
         if relative:
             is_relative=1 #yaw relative to direction of travel
         else:
@@ -231,127 +255,115 @@ class APMConnector:
             direction,  # param 3, direction 
             is_relative,# param 4, 
             0, 0, 0)    # param 5 ~ 7 not used
-        
+
         self.vehicle.send_mavlink(msg)
 
-    def get_location_metres(originalLocation, dNorth, dEast):
-        """
-        Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
-        specified `original_location`. The returned LocationGlobal has the same `alt` value
-        as `original_location`.
-
-        The function is useful when you want to move the vehicle around specifying locations relative to
-        the current vehicle position.
-
-        The algorithm is relatively accurate over small distances (10m within 1km) except close to the poles.
-
-        For more information see:
-        http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
-        """
-        earth_radius=6378137.0 #Radius of "spherical" earth
-        #Coordinate offsets in radians
-        dLat = dNorth/earth_radius
-        dLon = dEast/(earth_radius*math.cos(math.pi*original_location.lat/180))
-
-        #New position in decimal degrees
-        newlat = original_location.lat + (dLat * 180/math.pi)
-        newlon = original_location.lon + (dLon * 180/math.pi)
-        if type(original_location) is LocationGlobal:
-            targetlocation=LocationGlobal(newlat, newlon,original_location.alt)
-        elif type(original_location) is LocationGlobalRelative:
-            targetlocation=LocationGlobalRelative(newlat, newlon,original_location.alt)
-        else:
-            raise Exception("Invalid Location object passed")
-
-        return targetlocation;
-
-    def get_distance_metres(aLocation1, aLocation2):
-        """
-        Returns the ground distance in metres between two `LocationGlobal` or `LocationGlobalRelative` objects.
-
-        This method is an approximation, and will not be accurate over large distances and close to the
-        earth's poles. It comes from the ArduPilot test code:
-        https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
-        """
-        dlat = aLocation2.lat - aLocation1.lat
-        dlong = aLocation2.lon - aLocation1.lon
-        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
-
-    def get_bearing(aLocation1, aLocation2):
-        """
-        Returns the bearing between the two LocationGlobal objects passed as parameters.
-
-        This method is an approximation, and may not be accurate over large distances and close to the
-        earth's poles. It comes from the ArduPilot test code:
-        https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
-        """
-        off_x = aLocation2.lon - aLocation1.lon
-        off_y = aLocation2.lat - aLocation1.lat
-        bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
-        if bearing < 0:
-            bearing += 360.00
-        return bearing;
-
+    #
+    # Download commands(mission) from Pixhawk
+    # Return:
+    #     CommandSequence
+    #
     def downloadMission(self):
+        self.isConnected()
+        self.Log("Downloading commands ... ", 'SYSTEM')
+
         cmds = vehicle.commands
         cmds.download()
         cmds.wait_ready()
+        return cmds
 
+    #
+    # Clear mission in Pixhawk
+    # 
+    # Note:
+    # If a mission that is underway is cleared, the mission will continue to the next waypoint. 
+    # If you don’t add a new command before the waypoint is reached then the vehicle mode will 
+    # change to RTL (return to launch) mode.
+    #
     def clearMission(self):
+        self.isConnected()
+        self.Log("Clearing commands ... ", 'SYSTEM')
+
+        # TODO: check commands exist
         cmds = vehicle.commands
         cmds.clear()
         cmds.upload()
 
-    def setCommands(self):
-        self.downloadMission()
+    #
+    # Set mission
+    #
+    def setMission(self):
+        self.isConnected()
+        self.Log("Setting commands ... ", 'SYSTEM')
 
-        cmd1=Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10)
-        cmd2=Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, 10, 10, 10)
+        cmds = self.downloadMission()
+        cmd1=Command( 0, 0, 0, 
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 
+            0, 0, 0, 0, 0, 0, 0, 0, 10)
+        cmd2=Command( 0, 0, 0, 
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 
+            0, 0, 0, 0, 0, 0, 10, 10, 10)
         cmds.add(cmd1)
         cmds.add(cmd2)
         cmds.upload() # Send commands
 
-    def modifyCommands(self):
-        # Get the set of commands from the vehicle
-        cmds = vehicle.commands
-        cmds.download()
-        cmds.wait_ready()
+    #
+    # Modify mission
+    #
+    def modifyMission(self):
+        self.isConnected()
+        self.Log("Modifying commands ... ", 'SYSTEM')
 
-        # Save the vehicle commands to a list
-        missionlist=[]
+        cmds = self.downloadMission()
+        missionlist = []
         for cmd in cmds:
             missionlist.append(cmd)
 
         # Modify the mission as needed. For example, here we change the
         # first waypoint into a MAV_CMD_NAV_TAKEOFF command.
-        missionlist[0].command=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
-
-        # Clear the current mission (command is sent when we call upload())
+        missionlist[0].command = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
         cmds.clear()
 
-        #Write the modified mission and flush to the vehicle
         for cmd in missionlist:
             cmds.add(cmd)
         cmds.upload()
 
+    #
+    # Start mission
+    #
     def startMission():
-        pass
+        self.isConnected()
+        self.Log("Starting commands ... ", 'SYSTEM')
+
+        vehicle.mode = VehicleMode("AUTO")
 
     def gimbalRotate(self):
         self.isConnected()
         self.Log("Setting gimbal direction ... ", 'SYSTEM')
+
         self.vehicle.gimbal.rotate(-90, 0, 0)
         time.sleep(10)
 
     def gimbalTrack(self):
         self.isConnected()
         self.Log("Setting the camera to track point ... ", 'SYSTEM')
+
         self.vehicle.gimbal.target_location(self.vehicle.home_location)
         time.sleep(10)
 
-    def set_roi(location):
+    #
+    # Point camera gimbal at a specified region of interest (LocationGlobal)
+    # 
+    # Note:
+    # - The ROI (and yaw) is also reset when the mode, or the command used to control movement, is changed.
+    #
+    #
+    def setROI(location):
         self.isConnected()
         self.Log("Setting ROI ... ", 'SYSTEM')
+
         msg = self.vehicle.message_factory.command_long_encode(
             0, 0,    # target system, target component
             mavutil.mavlink.MAV_CMD_DO_SET_ROI, #command
@@ -363,6 +375,72 @@ class APMConnector:
             )
         # send command to vehicle
         self.vehicle.send_mavlink(msg)
+
+
+    #########################################
+    #                                       #
+    #       Frame conversion functions      #
+    #                                       #
+    #########################################
+    
+    # (Experiment)
+    # Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the
+    # specified `originalLocation`. The returned LocationGlobal has the same `alt` value
+    # as `originalLocation`.
+    #
+    # The function is useful when you want to move the vehicle around specifying locations relative to
+    # the current vehicle position.
+    #
+    # The algorithm is relatively accurate over small distances (10m within 1km) except close to the poles.
+    #
+    # For more information see:
+    # http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
+    def getLocationMeters(originalLocation, dNorth, dEast):
+        earth_radius=6378137.0 #Radius of "spherical" earth
+
+        #Coordinate offsets in radians
+        dLat = dNorth/earth_radius
+        dLon = dEast/(earth_radius*math.cos(math.pi * originalLocation.lat/180))
+
+        #New position in decimal degrees
+        newlat = originalLocation.lat + (dLat * 180/math.pi)
+        newlon = originalLocation.lon + (dLon * 180/math.pi)
+        if type(originalLocation) is LocationGlobal:
+            targetlocation=LocationGlobal(newlat, newlon, originalLocation.alt)
+        elif type(originalLocation) is LocationGlobalRelative:
+            targetlocation=LocationGlobalRelative(newlat, newlon, originalLocation.alt)
+        else:
+            raise Exception("Invalid Location object passed")
+
+        return targetlocation;
+
+    # (Experiment)
+    # Returns the ground distance in metres between two `LocationGlobal` or `LocationGlobalRelative` objects.
+    #
+    # This method is an approximation, and will not be accurate over large distances and close to the
+    # earth's poles. It comes from the ArduPilot test code:
+    # https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    #
+    def getDistanceMeters(aLocation1, aLocation2):
+        dlat = aLocation2.lat - aLocation1.lat
+        dlong = aLocation2.lon - aLocation1.lon
+        return math.sqrt((dlat * dlat) + (dlong * dlong)) * 1.113195e5
+
+    # (Experiment)
+    # Returns the bearing between the two LocationGlobal objects passed as parameters.
+    # 
+    # This method is an approximation, and may not be accurate over large distances and close to the
+    # earth's poles. It comes from the ArduPilot test code:
+    # https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    # 
+    def getBearing(aLocation1, aLocation2):
+        off_x = aLocation2.lon - aLocation1.lon
+        off_y = aLocation2.lat - aLocation1.lat
+        bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
+        if bearing < 0:
+            bearing += 360.00
+        return bearing;
+
 
     def Log(self, content, level=None):
         if level == 'SYSTEM':
