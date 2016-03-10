@@ -1,6 +1,9 @@
-from dronekit import connect, VehicleMode, mavutil
+from dronekit import connect, VehicleMode, mavutil, Command
 from Callback import Callback
 import time
+import sys
+reload(sys)
+sys.setdefaultencoding( 'utf-8' )
 
 class APMConnector:
     '''Class for connecting configuration '''
@@ -78,26 +81,26 @@ class APMConnector:
     def getAttributes(self):
         self.isConnected()
         self.Log('Reading attribute ... ', 'SYSTEM')
-        self.Log("Global Location: %s" % self.vehicle.location.global_frame)
-        self.Log("Global Location (relative altitude): %s" % self.vehicle.location.global_relative_frame)
-        self.Log("Local Location: %s" % self.vehicle.location.local_frame)    #NED
-        self.Log("Attitude: %s" % self.vehicle.attitude)
-        self.Log("Velocity: %s" % self.vehicle.velocity)
-        self.Log("GPS: %s" % self.vehicle.gps_0)
-        self.Log("Groundspeed: %s" % self.vehicle.groundspeed)
-        self.Log("Airspeed: %s" % self.vehicle.airspeed)
-        self.Log("Gimbal status: %s" % self.vehicle.gimbal)
-        self.Log("Battery: %s" % self.vehicle.battery)
-        self.Log("EKF OK?: %s" % self.vehicle.ekf_ok)
-        self.Log("Last Heartbeat: %s" % self.vehicle.last_heartbeat)
-        self.Log("Rangefinder: %s" % self.vehicle.rangefinder)
-        self.Log("Rangefinder distance: %s" % self.vehicle.rangefinder.distance)
-        self.Log("Rangefinder voltage: %s" % self.vehicle.rangefinder.voltage)
-        self.Log("Heading: %s" % self.vehicle.heading)
-        self.Log("Is Armable?: %s" % self.vehicle.is_armable)
-        self.Log("System status: %s" % self.vehicle.system_status.state)
-        self.Log("Mode: %s" % self.vehicle.mode.name)    # settable
-        self.Log("Armed: %s" % self.vehicle.armed)    # settable
+        self.Log('Global Location: %s' % self.vehicle.location.global_frame)
+        self.Log('Global Location (relative altitude): %s' % self.vehicle.location.global_relative_frame)
+        self.Log('Local Location: %s' % self.vehicle.location.local_frame)    #NED
+        self.Log('Attitude: %s' % self.vehicle.attitude)
+        self.Log('Velocity: %s' % self.vehicle.velocity)
+        self.Log('GPS: %s' % self.vehicle.gps_0)
+        self.Log('Groundspeed: %s' % self.vehicle.groundspeed)
+        self.Log('Airspeed: %s' % self.vehicle.airspeed)
+        self.Log('Gimbal status: %s' % self.vehicle.gimbal)
+        self.Log('Battery: %s' % self.vehicle.battery)
+        self.Log('EKF OK?: %s' % self.vehicle.ekf_ok)
+        self.Log('Last Heartbeat: %s' % self.vehicle.last_heartbeat)
+        self.Log('Rangefinder: %s' % self.vehicle.rangefinder)
+        self.Log('Rangefinder distance: %s' % self.vehicle.rangefinder.distance)
+        self.Log('Rangefinder voltage: %s' % self.vehicle.rangefinder.voltage)
+        self.Log('Heading: %s' % self.vehicle.heading)
+        self.Log('Is Armable?: %s' % self.vehicle.is_armable)
+        self.Log('System status: %s' % self.vehicle.system_status.state)
+        self.Log('Mode: %s' % self.vehicle.mode.name)    # settable
+        self.Log('Armed: %s' % self.vehicle.armed)    # settable
 
     #
     # Add listener for attributes and parameters (Experiment)
@@ -119,23 +122,23 @@ class APMConnector:
         self.isConnected()
         self.Log('Arming ... ', 'SYSTEM')
 
-        if self.vehicle.mode.name == "INITIALISING":
-            self.Log("Waiting for vehicle to initialise ... ")
+        if self.vehicle.mode.name == 'INITIALISING':
+            self.Log('Waiting for vehicle to initialise ... ')
             time.sleep(1)
         while self.vehicle.gps_0.fix_type < 2:
-            self.Log("Waiting for GPS...:" + self.vehicle.gps_0.fix_type)
+            self.Log('Waiting for GPS...:' + self.vehicle.gps_0.fix_type)
             time.sleep(1)
         while not self.vehicle.is_armable:
-            self.Log("Waiting for vehicle to initialise ... ")
+            self.Log('Waiting for vehicle to initialise ... ')
             time.sleep(1)
 
-        self.vehicle.mode = VehicleMode("GUIDED")
+        self.vehicle.mode = VehicleMode('GUIDED')
         self.vehicle.armed = True
 
         while not self.vehicle.mode.name=='GUIDED' or not self.vehicle.armed:
             self.Log('Getting ready to take off ...')
             time.sleep(1)
-        self.Log("Armed: %s" % self.vehicle.armed)
+        self.Log('Armed: %s' % self.vehicle.armed)
 
     # 
     # Get home location (Experiment)
@@ -150,7 +153,7 @@ class APMConnector:
             self.Log('Waiting for home location ... ')
             self.downloadMission()
                 
-        self.Log("Home location: %s" % self.vehicle.home_location)
+        self.Log('Home location: %s' % self.vehicle.home_location)
         return self.vehicle.home_location
 
     #
@@ -158,9 +161,9 @@ class APMConnector:
     #
     def gerParams(self):
         self.isConnected()
-        self.Log("Getting parameters ... ", 'SYSTEM')
+        self.Log('Getting parameters ... ', 'SYSTEM')
         for key, value in self.vehicle.parameters.iteritems():
-            self.Log(" Key:%s Value:%s" % (key,value))
+            self.Log(' Key:%s Value:%s' % (key,value))
 
     #
     # Take off to given altitude (Experiment)
@@ -169,16 +172,16 @@ class APMConnector:
     #
     def takeOff(self, altitude):
         self.isConnected()
-        self.Log("Arming vehicle and taking off ... ", 'SYSTEM')
+        self.Log('Arming vehicle and taking off ... ', 'SYSTEM')
 
         self.armed()
         self.vehicle.simple_takeoff(altitude)
         self.Log('Taking off!', 'SYSTEM') 
 
         while True:
-            print ">>> Altitude: ", self.vehicle.location.global_relative_frame.alt
+            print '>>> Altitude: ', self.vehicle.location.global_relative_frame.alt
             if self.vehicle.location.global_relative_frame.alt >= altitude * 0.95:
-                self.Log("Reached target altitude")
+                self.Log('Reached target altitude')
                 break
             time.sleep(1)
 
@@ -190,11 +193,11 @@ class APMConnector:
     #
     def goTo(self, location, groundspeed):
         self.isConnected()
-        self.Log("Going to ... ", 'SYSTEM')
-        vehicle.mode = VehicleMode("GUIDED")
+        self.Log('Going to ... ', 'SYSTEM')
+        vehicle.mode = VehicleMode('GUIDED')
 
         a_location = LocationGlobalRelative(-34.364114, 149.166022, 30)
-        self.vehicle..simple_goto(a_location, groundspeed = groundspeed)
+        self.vehicle.simple_goto(a_location, groundspeed = groundspeed)
 
     #
     # Set NED speed for UAV
@@ -205,7 +208,7 @@ class APMConnector:
     #     num: duration (s)
     def sendNedVelocity(self, velocity_x, velocity_y, velocity_z, duration):
         self.isConnected()
-        self.Log("Moving vehicle in direction based on specified velocity vectors ", 'SYSTEM')
+        self.Log('Moving vehicle in direction based on specified velocity vectors ', 'SYSTEM')
 
         msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
             0,       # time_boot_ms (not used)
@@ -219,8 +222,8 @@ class APMConnector:
 
         for x in range(0,duration):
             self.vehicle.send_mavlink(msg)
-            #self.Log("Airspeed: %s" % )
-            self.Log("Currently, Global Location: %s, Airspeed: %s, " % (self.vehicle.location.global_frame,self.vehicle.airspeed))
+            #self.Log('Airspeed: %s' % )
+            self.Log('Currently, Global Location: %s, Airspeed: %s, ' % (self.vehicle.location.global_frame,self.vehicle.airspeed))
             time.sleep(1)
 
     #
@@ -233,14 +236,14 @@ class APMConnector:
     # Note:(http://python.dronekit.io/guide/copter/guided_mode.html)
     # - The yaw will return to the default (facing direction of travel) after you set the mode or change the command 
     #   used for controlling movement.
-    # - At time of writing there is no safe way to return to the default yaw “face direction of travel” behaviour.
-    # - After taking off, yaw commands are ignored until the first “movement” command has been received. If you need 
-    #   to yaw immediately following takeoff then send a command to “move” to your current position.
+    # - At time of writing there is no safe way to return to the default yaw 'face direction of travel' behaviour.
+    # - After taking off, yaw commands are ignored until the first 'movement' command has been received. If you need 
+    #   to yaw immediately following takeoff then send a command to 'move' to your current position.
     # - Setting the ROI may work to get yaw to track a particular point (depending on the gimbal setup).
 
     def setYaw(degrees, direction, relative=False):
         self.isConnected()
-        self.Log("Setting Yaw ... ", 'SYSTEM')
+        self.Log('Setting Yaw ... ', 'SYSTEM')
 
         if relative:
             is_relative=1 #yaw relative to direction of travel
@@ -265,9 +268,9 @@ class APMConnector:
     #
     def downloadMission(self):
         self.isConnected()
-        self.Log("Downloading commands ... ", 'SYSTEM')
+        self.Log('Downloading commands ... ', 'SYSTEM')
 
-        cmds = vehicle.commands
+        cmds = self.vehicle.commands
         cmds.download()
         cmds.wait_ready()
         return cmds
@@ -277,12 +280,12 @@ class APMConnector:
     # 
     # Note:
     # If a mission that is underway is cleared, the mission will continue to the next waypoint. 
-    # If you don’t add a new command before the waypoint is reached then the vehicle mode will 
+    # If you don't add a new command before the waypoint is reached then the vehicle mode will
     # change to RTL (return to launch) mode.
     #
     def clearMission(self):
         self.isConnected()
-        self.Log("Clearing commands ... ", 'SYSTEM')
+        self.Log('Clearing commands ... ', 'SYSTEM')
 
         # TODO: check commands exist
         cmds = vehicle.commands
@@ -292,9 +295,9 @@ class APMConnector:
     #
     # Set mission
     #
-    def setMission(self):
+    def setMission(self, commands):
         self.isConnected()
-        self.Log("Setting commands ... ", 'SYSTEM')
+        self.Log('Setting commands ... ', 'SYSTEM')
 
         cmds = self.downloadMission()
         cmd1=Command( 0, 0, 0, 
@@ -314,7 +317,7 @@ class APMConnector:
     #
     def modifyMission(self):
         self.isConnected()
-        self.Log("Modifying commands ... ", 'SYSTEM')
+        self.Log('Modifying commands ... ', 'SYSTEM')
 
         cmds = self.downloadMission()
         missionlist = []
@@ -333,22 +336,37 @@ class APMConnector:
     #
     # Start mission
     #
-    def startMission():
+    def startMission(self):
         self.isConnected()
-        self.Log("Starting commands ... ", 'SYSTEM')
+        self.Log('Starting commands ... ', 'SYSTEM')
 
-        vehicle.mode = VehicleMode("AUTO")
+        self.vehicle.mode = VehicleMode('AUTO')
+        # while True:
+        #     print "Current Waypoint: %s" % self.vehicle.commands.next
+        #     time.sleep(1)
+
+    #
+    # Pause mission
+    #
+    def pauseMission(self):
+        pass
+
+    #
+    # Stop mission
+    #
+    def stopMission(self):
+        pass
 
     def gimbalRotate(self):
         self.isConnected()
-        self.Log("Setting gimbal direction ... ", 'SYSTEM')
+        self.Log('Setting gimbal direction ... ', 'SYSTEM')
 
         self.vehicle.gimbal.rotate(-90, 0, 0)
         time.sleep(10)
 
     def gimbalTrack(self):
         self.isConnected()
-        self.Log("Setting the camera to track point ... ", 'SYSTEM')
+        self.Log('Setting the camera to track point ... ', 'SYSTEM')
 
         self.vehicle.gimbal.target_location(self.vehicle.home_location)
         time.sleep(10)
@@ -362,7 +380,7 @@ class APMConnector:
     #
     def setROI(location):
         self.isConnected()
-        self.Log("Setting ROI ... ", 'SYSTEM')
+        self.Log('Setting ROI ... ', 'SYSTEM')
 
         msg = self.vehicle.message_factory.command_long_encode(
             0, 0,    # target system, target component
@@ -396,7 +414,7 @@ class APMConnector:
     # For more information see:
     # http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
     def getLocationMeters(originalLocation, dNorth, dEast):
-        earth_radius=6378137.0 #Radius of "spherical" earth
+        earth_radius=6378137.0 #Radius of 'spherical' earth
 
         #Coordinate offsets in radians
         dLat = dNorth/earth_radius
@@ -410,7 +428,7 @@ class APMConnector:
         elif type(originalLocation) is LocationGlobalRelative:
             targetlocation=LocationGlobalRelative(newlat, newlon, originalLocation.alt)
         else:
-            raise Exception("Invalid Location object passed")
+            raise Exception('Invalid Location object passed')
 
         return targetlocation;
 
