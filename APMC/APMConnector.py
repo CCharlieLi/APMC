@@ -45,6 +45,7 @@ class APMConnector:
     # UAV self check (Experiment)
     #
     def selfCheck(self):
+        #[TODO]
         pass
         
 
@@ -277,6 +278,12 @@ class APMConnector:
 
         self.vehicle.send_mavlink(msg)
 
+    #########################################
+    #                                       #
+    #            Mission functions          #
+    #                                       #
+    #########################################
+
     #
     # Download commands(mission) from Pixhawk
     # Return:
@@ -284,12 +291,13 @@ class APMConnector:
     #
     def downloadMission(self):
         self.isConnected()
-        self.Log('Downloading commands ... ', 'SYSTEM')
+        self.Log('Downloading mission ... ', 'SYSTEM')
 
         cmds = self.vehicle.commands
         cmds.download()
         cmds.wait_ready()
         return cmds
+
 
     #
     # Clear mission in Pixhawk
@@ -301,9 +309,9 @@ class APMConnector:
     #
     def clearMission(self):
         self.isConnected()
-        self.Log('Clearing commands ... ', 'SYSTEM')
+        self.Log('Clearing mission ... ', 'SYSTEM')
 
-        # TODO: check commands exist
+        # [TODO] check commands exist
         cmds = vehicle.commands
         cmds.clear()
         cmds.upload()
@@ -313,7 +321,7 @@ class APMConnector:
     #
     def setMission(self, commands):
         self.isConnected()
-        self.Log('Setting commands ... ', 'SYSTEM')
+        self.Log('Setting mission ... ', 'SYSTEM')
 
         cmds = self.downloadMission()
         cmd1=Command( 0, 0, 0, 
@@ -333,7 +341,7 @@ class APMConnector:
     #
     def modifyMission(self):
         self.isConnected()
-        self.Log('Modifying commands ... ', 'SYSTEM')
+        self.Log('Modifying mission ... ', 'SYSTEM')
 
         cmds = self.downloadMission()
         missionlist = []
@@ -354,24 +362,106 @@ class APMConnector:
     #
     def startMission(self):
         self.isConnected()
-        self.Log('Starting commands ... ', 'SYSTEM')
+        self.Log('Starting mission ... ', 'SYSTEM')
 
         self.vehicle.mode = VehicleMode('AUTO')
-        # while True:
-        #     print "Current Waypoint: %s" % self.vehicle.commands.next
-        #     time.sleep(1)
+        # [TODO] Need listener for self.vehicle.commands.next 
+        # [TODO] Check if reach end of the mission (check model or waypoint?)
 
     #
     # Pause mission
     #
     def pauseMission(self):
-        pass
+        self.isConnected()
+        self.Log('Pausing mission ... ', 'SYSTEM')
+
+        self.vehicle.mode = VehicleMode('GUIDED')
+        # [TODO] Set MIS_RESTART as 0
 
     #
     # Stop mission
     #
     def stopMission(self):
-        pass
+        self.isConnected()
+        self.Log('Stopping mission ... ', 'SYSTEM')
+
+        self.vehicle.mode = VehicleMode('GUIDED')
+        # [TODO] Set MIS_RESTART as 1
+
+    #
+    # Upload a mission from a file
+    # Imput:
+    #     file: mission file
+    #
+    def importMission(self, fileName):
+        self.isConnected()
+        self.Log('Importing mission ... ', 'SYSTEM')
+
+        missionlist = self.readMission(fileName)
+        self.clearMission()
+        for command in missionlist:
+            cmds.add(command)
+        print ' Upload mission'
+        vehicle.commands.upload()
+
+    #
+    # Load a mission from a file into a list
+    #
+    def readMission(self, fileName):
+        self.isConnected()
+        self.Log('Reading mission file ... ', 'SYSTEM')
+
+        cmds = self.vehicle.commands
+        missionlist=[]
+        with open(fileName) as f:
+            for i, line in enumerate(f):
+                if i==0:
+                    if not line.startswith('QGC WPL 110'):
+                        raise Exception('File is not supported WP version')
+                else:
+                    linearray=line.split('\t')
+                    ln_index=int(linearray[0])
+                    ln_currentwp=int(linearray[1])
+                    ln_frame=int(linearray[2])
+                    ln_command=int(linearray[3])
+                    ln_param1=float(linearray[4])
+                    ln_param2=float(linearray[5])
+                    ln_param3=float(linearray[6])
+                    ln_param4=float(linearray[7])
+                    ln_param5=float(linearray[8])
+                    ln_param6=float(linearray[9])
+                    ln_param7=float(linearray[10])
+                    ln_autocontinue=int(linearray[11].strip())
+                    cmd = Command( 0, 0, 0, ln_frame, ln_command, ln_currentwp, ln_autocontinue, ln_param1, ln_param2, ln_param3, ln_param4, ln_param5, ln_param6, ln_param7)
+                    missionlist.append(cmd)
+        return missionlist
+
+    #
+    # Save a mission in the Waypoint file format (http://qgroundcontrol.org/mavlink/waypoint_protocol#waypoint_file_format).
+    #
+    def save_mission(self, fileName):
+        self.isConnected()
+        self.Log('Saving mission into file %s ... ' % fileName, 'SYSTEM')
+
+        cmds = self.downloadMission()
+        missionlist=[]
+        for cmd in cmds:
+            missionlist.append(cmd)
+
+        output='QGC WPL 110\n'
+        for cmd in missionlist:
+            commandline="%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (cmd.seq,cmd.current,cmd.frame,cmd.command,cmd.param1,cmd.param2,cmd.param3,cmd.param4,cmd.x,cmd.y,cmd.z,cmd.autocontinue)
+            output+=commandline
+        with open(aFileName, 'w') as file_:
+            file_.write(output)
+
+
+    #########################################
+    #                                       #
+    #            Gimbal  functions          #
+    #                                       #
+    #########################################
+
 
     def gimbalRotate(self):
         self.isConnected()
@@ -393,8 +483,7 @@ class APMConnector:
     # Note:
     # - The ROI (and yaw) is also reset when the mode, or the command used to control movement, is changed.
     #
-    #
-    def setROI(location):
+    def setROI(self, location):
         self.isConnected()
         self.Log('Setting ROI ... ', 'SYSTEM')
 
@@ -429,7 +518,7 @@ class APMConnector:
     #
     # For more information see:
     # http://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
-    def getLocationMeters(originalLocation, dNorth, dEast):
+    def getLocationMeters(self, originalLocation, dNorth, dEast):
         earth_radius=6378137.0 #Radius of 'spherical' earth
 
         #Coordinate offsets in radians
@@ -440,13 +529,13 @@ class APMConnector:
         newlat = originalLocation.lat + (dLat * 180/math.pi)
         newlon = originalLocation.lon + (dLon * 180/math.pi)
         if type(originalLocation) is LocationGlobal:
-            targetlocation=LocationGlobal(newlat, newlon, originalLocation.alt)
+            targetLocation = LocationGlobal(newlat, newlon, originalLocation.alt)
         elif type(originalLocation) is LocationGlobalRelative:
-            targetlocation=LocationGlobalRelative(newlat, newlon, originalLocation.alt)
+            targetLocation = LocationGlobalRelative(newlat, newlon, originalLocation.alt)
         else:
             raise Exception('Invalid Location object passed')
 
-        return targetlocation;
+        return targetLocation;
 
     # (Experiment)
     # Returns the ground distance in metres between two `LocationGlobal` or `LocationGlobalRelative` objects.
@@ -455,10 +544,26 @@ class APMConnector:
     # earth's poles. It comes from the ArduPilot test code:
     # https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
     #
-    def getDistanceMeters(aLocation1, aLocation2):
+    def getDistanceMeters(self, aLocation1, aLocation2):
         dlat = aLocation2.lat - aLocation1.lat
         dlong = aLocation2.lon - aLocation1.lon
         return math.sqrt((dlat * dlat) + (dlong * dlong)) * 1.113195e5
+
+    #
+    # Gets distance in metres to the current waypoint.
+    # It returns None for the first waypoint (Home location).
+    #
+    def distanceToCurrentWaypoint(self):
+        nextWayPoint = self.vehicle.commands.next
+        if nextWayPoint == 0:
+            return None
+        missionItem = self.vehicle.commands[nextWayPoint-1] #commands are zero indexed
+        lat = missionItem.x
+        lon = missionItem.y
+        alt = missionItem.z
+        targetWaypointLocation = LocationGlobalRelative(lat,lon,alt)
+        distanceToPoint = getDistanceMeters(self.vehicle.location.global_frame, targetWaypointLocation)
+        return distanceToPoint
 
     # (Experiment)
     # Returns the bearing between the two LocationGlobal objects passed as parameters.
@@ -467,7 +572,7 @@ class APMConnector:
     # earth's poles. It comes from the ArduPilot test code:
     # https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
     # 
-    def getBearing(aLocation1, aLocation2):
+    def getBearing(self, aLocation1, aLocation2):
         off_x = aLocation2.lon - aLocation1.lon
         off_y = aLocation2.lat - aLocation1.lat
         bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
@@ -476,6 +581,9 @@ class APMConnector:
         return bearing;
 
 
+    #
+    # Log function
+    #
     def Log(self, content, level=None):
         if level == 'SYSTEM':
             print '\033[0;33;40m'
