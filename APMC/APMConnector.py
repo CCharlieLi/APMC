@@ -258,7 +258,7 @@ class APMConnector:
     #   to yaw immediately following takeoff then send a command to 'move' to your current position.
     # - Setting the ROI may work to get yaw to track a particular point (depending on the gimbal setup).
 
-    def setYaw(degrees, direction, relative=False):
+    def setYaw(self, degrees, direction, relative=False):
         self.isConnected()
         self.Log('Setting Yaw ... ', 'SYSTEM')
 
@@ -266,7 +266,7 @@ class APMConnector:
             is_relative=1 #yaw relative to direction of travel
         else:
             is_relative=0 #yaw is an absolute angle
-        msg = vehicle.message_factory.command_long_encode(
+        msg = self.vehicle.message_factory.command_long_encode(
             0, 0,    # target system, target component
             mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
             0, #confirmation
