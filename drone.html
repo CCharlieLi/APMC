@@ -1,0 +1,783 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Drone with 4G</title>
+  <style type="text/css">
+    body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #222;
+  font-size: 100%;
+}
+
+.slide {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 0; right: 0;
+  background-color: #f7f7f7;
+}
+
+.slide-content {
+  width: 800px;
+  height: 600px;
+  overflow: hidden;
+  margin: 80px auto 0 auto;
+  padding: 30px;
+
+  font-weight: 200;
+  font-size: 200%;
+  line-height: 1.375;
+}
+
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+.arrow {
+  width: 0; height: 0;
+  border: 30px solid #333;
+  float: left;
+  margin-right: 30px;
+
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.prev {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+
+  border-left-width: 0;
+  border-right-width: 50px;
+}
+
+.next {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+
+  border-left-width: 50px;
+  border-right-width: 0;
+}
+
+.prev:hover {
+  border-right-color: #888;
+  cursor: pointer;
+}
+
+.next:hover {
+  border-left-color: #888;
+  cursor: pointer;
+}
+
+h1 {
+  font-size: 300%;
+  line-height: 1.2;
+  text-align: center;
+  margin: 170px 0 0;
+}
+
+h2 {
+  font-size: 100%;
+  line-height: 1.2;
+  margin: 5px 0;
+  text-align: center;
+  font-weight: 200;
+}
+
+h3 {
+  font-size: 140%;
+  line-height: 1.2;
+  border-bottom: 1px solid #aaa;
+  margin: 0;
+  padding-bottom: 15px;
+}
+
+ul {
+  padding: 20px 0 0 60px;
+  font-weight: 200;
+  line-height: 1.375;
+}
+
+.author h1 {
+  font-size: 170%;
+  font-weight: 200;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.author h3 {
+  font-weight: 100;
+  text-align: center;
+  font-size: 95%;
+  border: none;
+}
+
+a {
+  text-decoration: none;
+  color: #44a4dd;
+}
+
+a:hover {
+  color: #66b5ff;
+}
+
+pre {
+  font-size: 60%;
+  line-height: 1.3;
+}
+
+.progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 3px;
+  background-color: #b4b4b4;
+
+  -webkit-transition: width 0.05s ease-out;
+  -moz-transition: width 0.05s ease-out;
+  -o-transition: width 0.05s ease-out;
+  transition: width 0.05s ease-out;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 850px) {
+
+  body {
+    font-size: 70%;
+  }
+
+  .slide-content {
+    width: auto;
+  }
+
+  img {
+    width: 100%;
+  }
+
+  h1 {
+    margin-top: 120px;
+  }
+
+  .prev, .prev:hover {
+    border-right-color: rgba(135, 135, 135, 0.5);
+  }
+
+  .next, .next:hover {
+    border-left-color: rgba(135, 135, 135, 0.5);
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 50%;
+    overflow: hidden;
+  }
+
+  .slide-content {
+    padding: 10px;
+    margin-top: 10px;
+    height: 340px;
+  }
+
+  h1 {
+    margin-top: 50px;
+  }
+
+  ul {
+    padding-left: 25px;
+  }
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+  }
+
+  @page {
+    size: letter;
+  }
+
+  .hidden {
+    display: inline;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  body {
+    margin: 0 auto !important;
+    border: 0;
+    padding: 0;
+    float: none !important;
+    overflow: visible;
+    background: none !important;
+    font-size: 52%;
+  }
+
+  .progress, .controls {
+    display: none;
+  }
+
+  .slide {
+    position: static;
+  }
+
+  .slide-content {
+    border: 1px solid #222;
+    margin-top: 0;
+    margin-bottom: 40px;
+    height: 3.5in;
+    overflow: visible;
+  }
+
+  .slide:nth-child(even) {
+    /* 2 slides per page */
+    page-break-before: always;
+  }
+}
+
+/*
+
+github.com style (c) Vasily Polovnyov <vast@whiteants.net>
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #333;
+  background: #f8f8f8;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #998;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #333;
+  font-weight: bold;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: #008080;
+}
+
+.hljs-string,
+.hljs-doctag {
+  color: #d14;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: #900;
+  font-weight: bold;
+}
+
+.hljs-subst {
+  font-weight: normal;
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #458;
+  font-weight: bold;
+}
+
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: #000080;
+  font-weight: normal;
+}
+
+.hljs-regexp,
+.hljs-link {
+  color: #009926;
+}
+
+.hljs-symbol,
+.hljs-bullet {
+  color: #990073;
+}
+
+.hljs-built_in,
+.hljs-builtin-name {
+  color: #0086b3;
+}
+
+.hljs-meta {
+  color: #999;
+  font-weight: bold;
+}
+
+.hljs-deletion {
+  background: #fdd;
+}
+
+.hljs-addition {
+  background: #dfd;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+body {
+  background-color: #222;
+  color: #eee;
+}
+
+h1, h3 {
+  font-family: Impact;
+  font-weight: bold;
+  font-style: italic;
+}
+
+pre code {
+  color: #ccc;
+  font-size: 140%;
+}
+
+.slide {
+  background-color: inherit;
+}
+
+.keyword {
+  color: #0086b3 !important;
+  font-weight: inherit !important;
+}
+
+.tag {
+  color: #900 !important;
+}
+
+code {
+  background-color: inherit;
+}
+
+em {
+  border-bottom: 1px solid #666;
+}
+
+#slide-1 {
+  background: url('1.jpg');
+  background-size: cover;
+  color: #eee;
+}
+  </style>
+</head>
+<body>
+    <div class="progress">
+    <div class="progress-bar"></div>
+  </div>
+
+  <div class="slide" id="slide-1">
+    <section class="slide-content"><h1 id="-drone-with-4g-https-wiredcraft-com-blog-drone-copter-uav-4g-network-"><a href="https://wiredcraft.com/blog/drone-copter-uav-4g-network/">Drone with 4G</a></h1>
+<h2 id="make-your-drone-fly-farther-with-a-4g-network-connection">Make your drone fly farther with a 4G network connection</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-2">
+    <section class="slide-content"><h3 id="unmanned-aerial-vehicle-uav-">Unmanned Aerial Vehicle (UAV)</h3>
+<p>Have you ever used a UAV? or even built one?</p>
+<ul>
+<li><a href="http://www.dji.com/">DJI</a></li>
+<li><a href="http://www.parrot.com">Parrot</a></li>
+<li><a href="https://3dr.com/">3D Robotics(3DR)</a></li>
+</ul>
+<p>Thanks to these companies, nearly everyone can take home a rather inexpensive UAV for aerial photography or playing with as a toy.</p>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-3">
+    <section class="slide-content"><h3 id="what-made-up-a-drone-">What made up a drone?</h3>
+<ul>
+<li><strong>Fly control/management system</strong></li>
+<li>Battery</li>
+<li>Electron speed regulator</li>
+<li>Rotor</li>
+<li>Airscrew</li>
+<li>Radio receiver/transmitter</li>
+<li>GPS</li>
+<li>...</li>
+</ul>
+<p>It&#39;s never easy to make a drone from scratch.</p>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-4">
+    <section class="slide-content"><center>
+    <img src="http://stack.formidable.com/spectacle/dist/95649f398587a84a7e69e0493c83e88e.png" height="300">
+</center>
+
+<h2 id="what-s-wrong-with-drones-">What&#39;s wrong with drones?</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-5">
+    <section class="slide-content"><h1 id="the-maximum-control-distance">The maximum control distance</h1>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-6">
+    <section class="slide-content"><h3 id="problems">Problems</h3>
+<ul>
+<li>The maximum distance of most civilian UAVs is less than 5 miles.</li>
+<li>For industry-level drones, it&#39;s around 30-50 miles.</li>
+<li>Lose connection, out of control.</li>
+</ul>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-7">
+    <section class="slide-content"><center>
+    <img src="http://pic36.nipic.com/20131224/7849306_151617411180_2.jpg" height="300">
+</center>
+
+<h2 id="let-s-use-4g-network-to-control-drones">Let&#39;s use 4G network to control drones</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-8">
+    <section class="slide-content"><center>
+    <a href="http://wiredcraft.com/images/posts/drone-4g-network-1.png">
+        <img src="http://wiredcraft.com/images/posts/drone-4g-network-1.png" height="500">
+    </a>
+</center></section>
+  </div>
+  <div class="slide hidden" id="slide-9">
+    <section class="slide-content"><center>
+    <img src="http://pic36.nipic.com/20131224/7849306_151617247181_2.jpg" height="300">
+</center>
+
+<h2 id="what-goes-into-building-a-4g-connected-hexacopter-">What goes into building a 4G-connected hexacopter?</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-10">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-2.png" height="300">
+</center>
+
+<h2 id="aircraft-body-dji-s900-http-www-dji-com-cn-product-spreading-wings-s900-">Aircraft body: <a href="http://www.dji.com/cn/product/spreading-wings-s900">DJI S900</a></h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-11">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-3.png" height="300">
+</center>
+
+<h2 id="companion-computer-odroid-xu4-http-www-hardkernel-com-main-products-prdt_info-php-g_code-g143452239825-bpi-m2-http-www-hardkernel-com-main-products-prdt_info-php-g_code-g143452239825-with-an-ubuntu-operating-system">Companion computer: <a href="http://www.hardkernel.com/main/products/prdt_info.php?g_code=G143452239825">ODROID XU4</a>/<a href="http://www.hardkernel.com/main/products/prdt_info.php?g_code=G143452239825">BPI-M2</a>) with an Ubuntu operating system</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-12">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-4.png" height="300">
+</center>
+
+<h2 id="flight-control-board-pixhawk-http-pixhawk-com-with-apm-px4-">Flight control board: <a href="http://pixhawk.com/">Pixhawk</a>(with APM/PX4)</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-13">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-6.png" height="300">
+</center>
+
+<h2 id="huawei-e3272-4g-lte-dongle">HUAWEI E3272 4G LTE dongle</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-14">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-7.png" height="300">
+</center>
+
+<h2 id="nova-sds011-pm2-5-sensor">Nova SDS011 PM2.5 sensor</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-15">
+    <section class="slide-content"><center>
+    <img src="http://wiredcraft.com/images/posts/drone-4g-network-8.png" height="300">
+</center>
+
+<h2 id="matek-mini-power-hub-distribution-board-">Matek mini power hub (DIstribution board)</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-16">
+    <section class="slide-content"><ul>
+<li>5200 mah battery (for companion computer) and 16000 mah battery (for Pixhawk and rotors)</li>
+<li>TTL2USB module</li>
+<li>Dupont lines</li>
+<li>Fittings of Pixhawk: GPS module, buzzer, switch, etc.</li>
+</ul>
+<h2 id="that-s-pretty-much-of-it-woohoo-">That&#39;s pretty much of it! Woohoo!</h2>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-17">
+    <section class="slide-content"><center>
+    <a href="http://wiredcraft.com/images/posts/drone-4g-network-9.png">
+        <img src="http://wiredcraft.com/images/posts/drone-4g-network-9.png" height="500">
+    </a>
+</center></section>
+  </div>
+  <div class="slide hidden" id="slide-18">
+    <section class="slide-content"><h3 id="-setting-up-the-hexacopter-https-wiredcraft-com-blog-drone-copter-uav-4g-network-"><a href="https://wiredcraft.com/blog/drone-copter-uav-4g-network/">Setting up the hexacopter</a></h3>
+<ul>
+<li>Set up DJI S900 framework</li>
+<li>Prepare Pixhawk</li>
+<li>Set up Pixhawk on the S900</li>
+<li>Test the UAV</li>
+<li>Set up ODROID XU4</li>
+<li><a href="">Connect the PM2.5 sensor with XU4</a></li>
+<li>Power the XU4 with power hub</li>
+<li>Connect the XU4 with Pixhawk</li>
+<li><a href="">Communication between Pixhawk and the XU4</a></li>
+</ul>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-19">
+    <section class="slide-content"><h3 id="connect-the-pm2-5-sensor-with-xu4">Connect the PM2.5 sensor with XU4</h3>
+<p>Use <a href="https://github.com/CCharlieLi/pySensor">pySensor</a> on ODROID XU4 to read PM2.5 data from sensor. </p>
+<pre><code>14:59:52 PM2.5:  35
+14:59:53 PM2.5:  36
+14:59:54 PM2.5:  35
+14:59:55 PM2.5:  35</code></pre>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-20">
+    <section class="slide-content"><h3 id="communication-between-pixhawk-and-the-xu4">Communication between Pixhawk and the XU4</h3>
+<ul>
+<li>Use <a href="http://dronecode.github.io/MAVProxy/html/getting_started/index.html">Mavproxy</a> or <a href="http://python.dronekit.io/">Dronekit</a> to establish communication.</li>
+<li>Mavlink: A protocol designed to communicate with Pixhawk.</li>
+<li><a href="https://github.com/CCharlieLi/APMC">APM connector(APMC)</a>: A Dronekit based command line tool connect and give direct orders to Pixhawk.</li>
+</ul>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-21">
+    <section class="slide-content"><h3 id="server-side">Server side</h3>
+<ul>
+<li>Companion computer to send HTTP requests (POST) to the server every second with its data.</li>
+<li>Data could include PM2.5, location, timestamp, drone state, and more. </li>
+<li>XU4 gets return messages from the server as the current set of orders and passes it to Pixhawk.<center>
+  <img src="http://wiredcraft.com/images/posts/drone-4g-network-10.png" height="300">
+</center></li>
+</ul>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-22">
+    <section class="slide-content"><h3 id="problems-and-discussion">Problems and discussion</h3>
+<ul>
+<li>Network connection</li>
+<li>Network delay</li>
+</ul>
+</section>
+  </div>
+  <div class="slide hidden" id="slide-23">
+    <section class="slide-content"><h2 id="that-s-it-">That&#39;s it!</h2>
+<center>
+    <a href="http://wiredcraft.com/images/posts/4g-network-drone-copter-2.jpg">
+        <img src="http://wiredcraft.com/images/posts/4g-network-drone-copter-2.jpg" height="500">
+    </a>
+</center></section>
+  </div>
+  <div class="slide hidden author-slide" id="slide-24">
+    <section class="slide-content"><div class="author">
+  <h1 class="name">Charlie</h1>
+    <h3 class="github">
+      <a href="https://github.com/CCharlieLi">CCharlieLi</a>
+    </h3>
+    <h3 class="url">
+      <a href="charlieli.cn">charlieli.cn</a>
+    </h3>
+    <h3 class="email">
+      <a href="mailto:charlie@wiredcraft.com">charlie@wiredcraft.com</a>
+    </h3>
+</div>
+</section>
+  </div>
+
+  <div class="controls">
+    <div class="arrow prev"></div>
+    <div class="arrow next"></div>
+  </div>
+
+
+  <script type="text/javascript">
+    /**
+ * Returns the current page number of the presentation.
+ */
+function currentPosition() {
+  return parseInt(document.querySelector('.slide:not(.hidden)').id.slice(6));
+}
+
+
+/**
+ * Navigates forward n pages
+ * If n is negative, we will navigate in reverse
+ */
+function navigate(n) {
+  var position = currentPosition();
+  var numSlides = document.getElementsByClassName('slide').length;
+
+  /* Positions are 1-indexed, so we need to add and subtract 1 */
+  var nextPosition = (position - 1 + n) % numSlides + 1;
+
+  /* Normalize nextPosition in-case of a negative modulo result */
+  nextPosition = (nextPosition - 1 + numSlides) % numSlides + 1;
+
+  document.getElementById('slide-' + position).classList.add('hidden');
+  document.getElementById('slide-' + nextPosition).classList.remove('hidden');
+
+  updateProgress();
+  updateURL();
+  updateTabIndex();
+}
+
+
+/**
+ * Updates the current URL to include a hashtag of the current page number.
+ */
+function updateURL() {
+  try {
+    window.history.replaceState({} , null, '#' + currentPosition());
+  } catch (e) {
+    window.location.hash = currentPosition();
+  }
+}
+
+
+/**
+ * Sets the progress indicator.
+ */
+function updateProgress() {
+  var progressBar = document.querySelector('.progress-bar');
+
+  if (progressBar !== null) {
+    var numSlides = document.getElementsByClassName('slide').length;
+    var position = currentPosition() - 1;
+    var percent = (numSlides === 1) ? 100 : 100 * position / (numSlides - 1);
+    progressBar.style.width = percent.toString() + '%';
+  }
+}
+
+
+/**
+ * Removes tabindex property from all links on the current slide, sets
+ * tabindex = -1 for all links on other slides. Prevents slides from appearing
+ * out of control.
+ */
+function updateTabIndex() {
+  var allLinks = document.querySelectorAll('.slide a');
+  var position = currentPosition();
+  var currentPageLinks = document.getElementById('slide-' + position).querySelectorAll('a');
+  var i;
+
+  for (i = 0; i < allLinks.length; i++) {
+    allLinks[i].setAttribute('tabindex', -1);
+  }
+
+  for (i = 0; i < currentPageLinks.length; i++) {
+    currentPageLinks[i].removeAttribute('tabindex');
+  }
+}
+
+/**
+ * Determines whether or not we are currently in full screen mode
+ */
+function isFullScreen() {
+  return document.fullscreenElement ||
+         document.mozFullScreenElement ||
+         document.webkitFullscreenElement ||
+         document.msFullscreenElement;
+}
+
+/**
+ * Toggle fullScreen mode on document element.
+ * Works on chrome (>= 15), firefox (>= 9), ie (>= 11), opera(>= 12.1), safari (>= 5).
+ */
+function toggleFullScreen() {
+  /* Convenient renames */
+  var docElem = document.documentElement;
+  var doc = document;
+
+  docElem.requestFullscreen =
+      docElem.requestFullscreen ||
+      docElem.msRequestFullscreen ||
+      docElem.mozRequestFullScreen ||
+      docElem.webkitRequestFullscreen.bind(docElem, Element.ALLOW_KEYBOARD_INPUT);
+
+  doc.exitFullscreen =
+      doc.exitFullscreen ||
+      doc.msExitFullscreen ||
+      doc.mozCancelFullScreen ||
+      doc.webkitExitFullscreen;
+
+  isFullScreen() ? doc.exitFullscreen() : docElem.requestFullscreen();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Update the tabindex to prevent weird slide transitioning
+  updateTabIndex();
+
+  // If the location hash specifies a page number, go to it.
+  var page = window.location.hash.slice(1);
+  if (page) {
+    navigate(parseInt(page) - 1);
+  }
+
+  document.onkeydown = function (e) {
+    var kc = e.keyCode;
+
+    // left, down, H, J, backspace, PgUp - BACK
+    // up, right, K, L, space, PgDn - FORWARD
+    // enter - FULLSCREEN
+    if (kc === 37 || kc === 40 || kc === 8 || kc === 72 || kc === 74 || kc === 33) {
+      navigate(-1);
+    } else if (kc === 38 || kc === 39 || kc === 32 || kc === 75 || kc === 76 || kc === 34) {
+      navigate(1);
+    } else if (kc === 13) {
+      toggleFullScreen();
+    }
+  };
+
+  if (document.querySelector('.next') && document.querySelector('.prev')) {
+    document.querySelector('.next').onclick = function (e) {
+      e.preventDefault();
+      navigate(1);
+    };
+
+    document.querySelector('.prev').onclick = function (e) {
+      e.preventDefault();
+      navigate(-1);
+    };
+  }
+});
+
+
+  </script>
+</body>
+</html>
