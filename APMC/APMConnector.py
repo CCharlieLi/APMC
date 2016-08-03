@@ -143,7 +143,7 @@ class APMConnector:
             self.Log('Waiting for vehicle to initialise ... ')
             time.sleep(1)
         while self.vehicle.gps_0.fix_type < 2:
-            self.Log('Waiting for GPS...:' + self.vehicle.gps_0.fix_type)
+            self.Log('Waiting for GPS...:' + str(self.vehicle.gps_0.fix_type))
             time.sleep(1)
         while not self.vehicle.is_armable:
             self.Log('Waiting for vehicle to initialise ... ')
