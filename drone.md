@@ -33,8 +33,8 @@ Thanks to these companies, nearly everyone can take home a rather inexpensive UA
 
 ### What made up a drone?
 
-* **Fly control/management system**
-* Battery
+* **Flight control/management system**
+* Lithium battery
 * Electron speed regulator
 * Rotor
 * Airscrew
@@ -60,8 +60,8 @@ It's never easy to make a drone from scratch.
 
 ### Problems
 
-* The maximum distance of most civilian UAVs is less than 5 miles.
-* For industry-level drones, it's around 30-50 miles.
+* The maximum distance of most civilian UAVs is less than 5 kilometres.
+* For industry-level drones, it's around 30-50 kilometres.
 * Lose connection, out of control.
 
 --
@@ -139,7 +139,7 @@ It's never easy to make a drone from scratch.
 
 --
 
-* 5200 mah battery (for companion computer) and 16000 mah battery (for Pixhawk and rotors)
+* 5200 mah lithium battery (for companion computer) and 16000 mah lithium battery (for Pixhawk and rotors)
 * TTL2USB module
 * Dupont lines
 * Fittings of Pixhawk: GPS module, buzzer, switch, etc.
@@ -205,11 +205,16 @@ Use [pySensor](https://github.com/CCharlieLi/pySensor) on ODROID XU4 to read PM2
 ### Problems and discussion
 
 - Network connection
+    - 4G network is not that better than radio.
+    - IP address changes in every cellular network.
 - Network delay
+    - No real-time control
+    - Mission control 
 
 --
 
 ## That's it!
+
 <center>
 	<a href="http://wiredcraft.com/images/posts/4g-network-drone-copter-2.jpg">
     	<img src="http://wiredcraft.com/images/posts/4g-network-drone-copter-2.jpg" height="500">
