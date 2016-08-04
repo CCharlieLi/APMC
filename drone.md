@@ -9,7 +9,7 @@ author:
   email: charlie@wiredcraft.com
   url: charlieli.cn
 
-output: drone.html
+output: index.html
 controls: true
 
 --
@@ -68,7 +68,7 @@ It's never easy to make a drone from scratch.
 
 
 <center>
-    <img src="http://pic36.nipic.com/20131224/7849306_151617411180_2.jpg" height="300">
+    <img src="http://ww1.sinaimg.cn/mw690/7650fd75jw1f6hf63fo8uj206j05y3yo.jpg" height="300">
 </center>
 
 ## Let's use 4G network to control drones
@@ -84,7 +84,7 @@ It's never easy to make a drone from scratch.
 --
 
 <center>
-    <img src="http://pic36.nipic.com/20131224/7849306_151617247181_2.jpg" height="300">
+    <img src="http://ww2.sinaimg.cn/mw690/7650fd75jw1f6hf63e6o1j209q0663yv.jpg" height="300">
 </center>
 
 ## What goes into building a 4G-connected hexacopter?
