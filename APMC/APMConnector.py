@@ -97,7 +97,6 @@ class APMConnector:
     #
     def addListeners(self):
         self.isConnected()
-        callback = Callback()
         self.Log('Adding attributes listeners ... ', 'SYSTEM')
         self.vehicle.add_attribute_listener('location.global_frame', callbackHelper)
         self.vehicle.add_attribute_listener('location.global_relative_frame', callbackHelper)
