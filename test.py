@@ -2,13 +2,13 @@ from APMC.APMConnector import APMConnector
 
 
 def main():
-    vehicle = APMConnector('/dev/cu.SLAB_USBtoUART',57600)
+    vehicle = APMConnector('/dev/cu.usbmodem1',57600)
     #vehicle.connect()
-    vehicle.getAttributes()
+    # vehicle.getAttributes()
     #vehicle.addListeners()
-    vehicle.armed()
-    vehicle.getHomeLocation()
-    #vehicle.gerParams()
+    # vehicle.armed()
+    # vehicle.getHomeLocation()
+    vehicle.gerParams()
     #vehicle.setMission(1)
     #vehicle.startMission()
     #vehicle.takeOff(0.5)

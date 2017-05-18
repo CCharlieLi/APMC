@@ -1,5 +1,4 @@
 from dronekit import connect, VehicleMode, mavutil, Command
-from Callback import Callback
 import time
 import sys
 reload(sys)
@@ -39,42 +38,32 @@ class APMConnector:
     def connect(self):
         self.Log('Connecting to the vehicle ... ', 'SYSTEM')
         self.vehicle = connect(self.addr, baud=self.baud, wait_ready=True)
-        return self.vehicle
+        self.getAttributes()
 
     #
-    # UAV self check (Experiment)
+    # Log function (TODO write in log file)
     #
-    def selfCheck(self):
-        #[TODO]
-        pass
-        
+    def Log(self, content, level=None):
+        if level == 'SYSTEM':
+            print '\033[0;33;40m'
+            print ''' %s   -   %s''' % (level, content)
+            print '\033[0m'
+        elif level == 'WARN':
+            print '\033[1;31;40m'
+            print ''' %s   -   %s''' % (level, content)
+            print '\033[0m'
+        else:
+            print content
 
-
-    #########################################
-    #                                       #
-    #            Control functions          #
-    #                                       #
-    #########################################
-
-
-
-    # 
-    # Set UAV speed (Experiment)
-    # Params:
-    #     num: Air speed (m/s)
-    #     num: Ground speed (m/s)
-    # Return:
-    #     (num, num): (airspeed, groundspeed) 
-    # 
-    def setSpeed(self, airspeed, groundspeed):
+    #
+    # Get vehicle parameters
+    #
+    def gerParams(self):
         self.isConnected()
-        self.Log('Setting attributes ... ', 'SYSTEM')
+        self.Log('Getting parameters ... ', 'SYSTEM')
+        for key, value in self.vehicle.parameters.iteritems():
+            self.Log(' Key:%s Value:%s' % (key,value))
 
-        vehicle.airspeed = airspeed #m/s
-        vehicle.groundspeed = groundspeed #m/s
-
-        self.Log('Air speed: %s, Ground speed: %s' % (vehicle.airspeed, vehicle.groundspeed))
-        return (vehicle.airspeed, vehicle.groundspeed)
 
     #
     # Get UAV attributes (Experiment)
@@ -110,27 +99,63 @@ class APMConnector:
         self.isConnected()
         callback = Callback()
         self.Log('Adding attributes listeners ... ', 'SYSTEM')
-        self.vehicle.add_attribute_listener('location.global_frame', callback.cb_global_frame)
-        self.vehicle.add_attribute_listener('location.global_relative_frame', callback.cb_global_relative_frame)
-        self.vehicle.add_attribute_listener('local_frame', callback.cb_local_frame)
-        self.vehicle.add_attribute_listener('attitude', callback.cb_attitude)
-        self.vehicle.add_attribute_listener('velocity', callback.cb_velocity)
-        self.vehicle.add_attribute_listener('gps_0', callback.cb_gps_0)
-        self.vehicle.add_attribute_listener('gimbal', callback.cb_gimbal)
-        self.vehicle.add_attribute_listener('battery', callback.cb_battery)
-        self.vehicle.add_attribute_listener('rangefinder', callback.cb_rangerfinder)
-        self.vehicle.add_attribute_listener('ekf_ok', callback.cb_ekf_ok)
-        self.vehicle.add_attribute_listener('last_heartbeat', callback.cb_last_heartbeat)
-        self.vehicle.add_attribute_listener('home_location', callback.cb_home_location)
-        self.vehicle.add_attribute_listener('system_status.state', callback.cb_system_status)
-        self.vehicle.add_attribute_listener('heading', callback.cb_heading)
-        self.vehicle.add_attribute_listener('is_armable', callback.cb_is_armable)
-        self.vehicle.add_attribute_listener('airspeed', callback.cb_airspeed)
-        self.vehicle.add_attribute_listener('groundspeed', callback.cb_groundspeed)
-        self.vehicle.add_attribute_listener('armed', callback.cb_armed)
-        self.vehicle.add_attribute_listener('mode.name', callback.cb_mode)
+        self.vehicle.add_attribute_listener('location.global_frame', callbackHelper)
+        self.vehicle.add_attribute_listener('location.global_relative_frame', callbackHelper)
+        self.vehicle.add_attribute_listener('local_frame', callbackHelper)
+        self.vehicle.add_attribute_listener('attitude', callbackHelper)
+        self.vehicle.add_attribute_listener('velocity', callbackHelper)
+        self.vehicle.add_attribute_listener('gps_0', callbackHelper)
+        self.vehicle.add_attribute_listener('gimbal', callbackHelper)
+        self.vehicle.add_attribute_listener('battery', callbackHelper)
+        self.vehicle.add_attribute_listener('rangefinder', callbackHelper)
+        self.vehicle.add_attribute_listener('ekf_ok', callbackHelper)
+        self.vehicle.add_attribute_listener('last_heartbeat', callbackHelper)
+        self.vehicle.add_attribute_listener('home_location', callbackHelper)
+        self.vehicle.add_attribute_listener('system_status.state', callbackHelper)
+        self.vehicle.add_attribute_listener('heading', callbackHelper)
+        self.vehicle.add_attribute_listener('is_armable', callbackHelper)
+        self.vehicle.add_attribute_listener('airspeed', callbackHelper)
+        self.vehicle.add_attribute_listener('groundspeed', callbackHelper)
+        self.vehicle.add_attribute_listener('armed', callbackHelper)
+        self.vehicle.add_attribute_listener('mode.name', callbackHelper)
         self.Log('Adding parameters listeners ... ', 'SYSTEM')
-        self.vehicle.parameters.add_attribute_listener('*', callback.cb_param_all)
+        self.vehicle.parameters.add_attribute_listener('*', callbackHelper)
+
+
+    def callbackHelper(self, vehicle, attr, value):
+        print "Attribute Update - %s: %s" % (attr, value)
+
+    #
+    # UAV self check (Experiment)
+    #
+    def selfCheck(self):
+        #[TODO]
+        pass
+        
+
+
+    #########################################
+    #                                       #
+    #            Control functions          #
+    #                                       #
+    #########################################
+    # 
+    # Set UAV speed (Experiment)
+    # Params:
+    #     num: Air speed (m/s)
+    #     num: Ground speed (m/s)
+    # Return:
+    #     (num, num): (airspeed, groundspeed) 
+    # 
+    def setSpeed(self, airspeed, groundspeed):
+        self.isConnected()
+        self.Log('Setting attributes ... ', 'SYSTEM')
+
+        vehicle.airspeed = airspeed #m/s
+        vehicle.groundspeed = groundspeed #m/s
+
+        self.Log('Air speed: %s, Ground speed: %s' % (vehicle.airspeed, vehicle.groundspeed))
+        return (vehicle.airspeed, vehicle.groundspeed)
 
     #
     # Arm UAV
@@ -172,15 +197,6 @@ class APMConnector:
                 
         self.Log('Home location: %s' % self.vehicle.home_location)
         return self.vehicle.home_location
-
-    #
-    # Get vehicle parameters
-    #
-    def gerParams(self):
-        self.isConnected()
-        self.Log('Getting parameters ... ', 'SYSTEM')
-        for key, value in self.vehicle.parameters.iteritems():
-            self.Log(' Key:%s Value:%s' % (key,value))
 
     #
     # Take off to given altitude (Experiment)
@@ -580,21 +596,4 @@ class APMConnector:
             bearing += 360.00
         return bearing;
 
-
-    #
-    # Log function
-    #
-    def Log(self, content, level=None):
-        if level == 'SYSTEM':
-            print '\033[0;33;40m'
-            print ''' %s   -   %s''' % (level, content)
-            print '\033[0m'
-        elif level == 'WARN':
-            print '\033[1;31;40m'
-            print ''' %s   -   %s''' % (level, content)
-            print '\033[0m'
-        else:
-            print content
-
-        # write in log file
 

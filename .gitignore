@@ -6,6 +6,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+### Mavlink ###
+mav.tlog
+mav.tlog.raw
+
 # C extensions
 *.so
 
